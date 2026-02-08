@@ -1,0 +1,12 @@
+# .gitignore
+__pycache__/
+*.pyc
+.env
+.venv/
+env/
+venv/
+.DS_Store
+
+# Google Auth Files (Critical Security)
+credentials.json
+token.json
