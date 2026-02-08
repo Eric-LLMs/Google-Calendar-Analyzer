@@ -36,7 +36,7 @@ Designed for engineers and professionals who need granular insights into their t
 ### 1. Clone the Repository
 ```bash
 git clone [https://github.com/your-username/daily-schedule-analyzer.git](https://github.com/your-username/daily-schedule-analyzer.git)
-cd daily-schedule-analyzer
+cd Google-Calendar-Analyzer
 
 ```
 
