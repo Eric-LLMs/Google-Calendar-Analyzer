@@ -1,7 +1,7 @@
 # 📅 Daily Schedule Analyzer Dashboard
 
-[![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)](https://www.python.org/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.31%2B-FF4B4B?logo=streamlit)](https://streamlit.io/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.34%2B-FF4B4B?logo=streamlit)](https://streamlit.io/)
 [![Plotly](https://img.shields.io/badge/Plotly-Interactive-3F4F75?logo=plotly)](https://plotly.com/python/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
@@ -11,26 +11,38 @@ Designed for engineers and professionals who need granular insights into their t
 
 ![Dashboard Demo](screenshots/dashboard_demo.png)
 
+## 💡 Motivation
+
+> *"If you can't measure it, you can't improve it."* — Peter Drucker
+
+Google Calendar's native **"Time Insights"** feature provides valuable analytics, but it is restrictively gatekept behind paid **Google Workspace** and **Education** editions. Standard users with personal accounts are left without tools to quantify their time allocation.
+
+I built this dashboard to **democratize time telemetry**. It bridges the gap between personal scheduling and enterprise-grade analytics, enabling any user to:
+1.  **Unlock "Time Insights" for Free**: visualize where your time goes without a monthly subscription.
+2.  **Quantify Deep Work**: Move beyond simple calendar viewing to actionable data analysis.
+3.  **Optimize Routine**: Use granular data to identify context-switching costs and adjust daily habits for peak performance.
+  
 ## ✨ Key Features
 
-* **Visualization Engine (Hybrid)**:
-    * **Interactive Swimlanes (New)**: Powered by **Plotly**, featuring rich hover-over tooltips that display full event descriptions, formatted notes, and precise durations.
-    * **Precision Timeline**: 24-hour linear visualization with sub-lane stacking for overlapping events.
-    * **Color Binding**: Strict Hex-code synchronization between Google Calendar source and charts.
+* **Advanced Visualization Engine**:
+    * **Smart Layout Algorithms**: Implements **Horizontal Staggering** to prevent label overlap for short-duration events, ensuring readability even in dense schedules.
+    * **Boundary Clamping**: Automatically adjusts text anchors for cross-day events (e.g., sleeping past midnight) so labels remain visible within the viewport.
+    * **Dual-Label Analytics**: Pie charts display both **Percentage** and **Absolute Hours** for precise time-cost analysis.
+
+* **Master-Detail Interaction (SPA Experience)**:
+    * **Zero-Jump Navigation**: Replaced standard page reloads with **Native Modals** (`@st.dialog`). Click any "View Detail" button to open a focused modal window instantly.
+    * **Custom Grid System**: A pixel-perfect list view that renders HTML descriptions from Google Calendar into clean Markdown.
 
 * **ETL Pipeline**:
-    * **Wide-Fetch Strategy**: Automatically broadens the API query window to handle UTC timezone offsets.
+    * **Wide-Fetch Strategy**: Automatically broadens the API query window to handle UTC timezone offsets without data loss.
     * **Timezone Synchronization**: Auto-detects and converts calendar events to the user's local system time.
-    * **Normalization**: Cleanses event titles and color metadata for accurate categorical aggregation.
-
-* **CJK Support**: Built-in font configuration to support Chinese/Japanese/Korean characters.
 
 ## 🛠️ Tech Stack
 
-* **Frontend**: Streamlit
+* **Frontend**: Streamlit (Session State, Dialogs, Custom CSS Injection)
 * **Data Processing**: Pandas
 * **Visualization**: 
-    * **Plotly** (Interactive Timeline & Tooltips)
+    * **Plotly Graph Objects** (Interactive Timeline Engine)
     * **Matplotlib** (Static Distribution Charts)
 * **Backend**: Google Client Library for Python
 
@@ -40,21 +52,25 @@ The project follows a modular architecture for scalability and maintainability:
 
 ```text
 Google-Calendar-Analyzer/
-├── app.py                # Application Entry Point
-├── src/                  # Source Modules
-│   ├── auth.py           # Google API Authentication
-│   ├── data_loader.py    # ETL & Data Cleaning
-│   ├── visualization.py  # Plotting Engines (Plotly/Matplotlib)
-│   ├── utils.py          # Algorithms (Overlap Detection)
-│   └── config.py         # Configuration & Constants
-└── requirements.txt      # Dependency Management
+├── app.py                 # Main entry point (Streamlit UI)
+├── requirements.txt       # Python dependencies
+├── credentials.json       # Google OAuth2 Credentials (DO NOT COMMIT)
+├── token.json             # User Access Token (Auto-generated)
+├── src/
+│   ├── __init__.py
+│   ├── auth.py            # Google Calendar API Authentication
+│   ├── data_loader.py     # Data fetching, cleaning & HTML parsing
+│   ├── visualization.py   # Plotly & Matplotlib rendering logic
+│   ├── utils.py           # Interval scheduling algorithms
+│   └── config.py          # Configuration (Color maps, Emojis)
+└── README.md
 ```
 
 ## 🚀 Installation & Setup
 
 ### 1. Clone the Repository
 ```bash
-git clone [https://github.com/your-username/Google-Calendar-Analyzer.git](https://github.com/your-username/Google-Calendar-Analyzer.git)
+git clone https://github.com/Eric-LLMs/Google-Calendar-Analyzer.git
 cd Google-Calendar-Analyzer
 
 ```
