@@ -1,0 +1,189 @@
+import datetime
+import pandas as pd  # 需要用到 pandas 处理时间计算
+import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+import streamlit as st
+from src.utils import solve_overlaps
+
+plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'sans-serif']
+plt.rcParams['axes.unicode_minus'] = False
+
+
+def plot_interactive_timeline(df, selected_date_obj=None):
+    """
+    绘制 Plotly 交互式泳道图
+    """
+    # [核心修改 1] 将 ref_date 的计算移到最前面，用于后续的边界判定
+    if selected_date_obj:
+        ref_date = selected_date_obj
+    elif not df.empty:
+        if 'Date' in df.columns:
+            ref_date = df.iloc[0]['Date']
+        else:
+            ref_date = df.iloc[0]['Local Start'].date()
+    else:
+        ref_date = datetime.date.today()
+
+    # 定义当天的可视边界 (用于 Clamping)
+    # 这里的 view_limit 并不带时区，比较时需要注意
+    # 我们主要利用 row['Local Start'] 来获取当天的 23:59:59 (带时区)
+
+    unique_events = sorted(df['Event Name'].unique(), reverse=True)
+
+    fig = go.Figure()
+
+    SUB_LANE_OFFSET = 0.4
+    BAR_THICKNESS = 15
+
+    y_tick_vals = []
+    y_tick_text = []
+    current_y_base = 0
+
+    for event_name in unique_events:
+        subset = df[df['Event Name'] == event_name].copy()
+        sub_lanes, max_sub = solve_overlaps(subset)
+
+        category_height = (max_sub + 1) * SUB_LANE_OFFSET
+        center_y = current_y_base + (category_height / 2) - (SUB_LANE_OFFSET / 2)
+        y_tick_vals.append(center_y)
+        y_tick_text.append(event_name)
+
+        for i, ((idx, row), sub_idx) in enumerate(zip(subset.iterrows(), sub_lanes)):
+            y_pos = current_y_base + (sub_idx * SUB_LANE_OFFSET)
+
+            # Hover 信息
+            hover_html = (
+                    f"<b>{row['Event Name']}</b><br>" +
+                    f"🕒 {row['Time Span']} ({row['Duration Label']})<br>" +
+                    f"------------------------------<br>" +
+                    f"{row['Tooltip Description']}"
+            )
+
+            fig.add_trace(go.Scatter(
+                x=[row['Local Start'], row['Local End']],
+                y=[y_pos, y_pos],
+                mode='lines',
+                line=dict(color=row['Hex Color'], width=BAR_THICKNESS),
+                name=row['Event Name'],
+                text=hover_html,
+                hoverinfo='text',
+                showlegend=False
+            ))
+
+            # [核心修改 2] 边界钳制 (Clamping)
+            # 计算当前事件所在日期的 23:59:59 (保留原时区信息)
+            # 使用 pd.Timestamp.ceil 或 replace 可能会丢失时区，这里用 Timedelta 安全计算
+            day_end_limit = row['Local Start'].normalize() + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
+
+            # 真实的视觉结束点：取“事件结束时间”和“当天23:59”的较小值
+            clamped_end = min(row['Local End'], day_end_limit)
+
+            # 判断是否被截断 (事件延伸到了第二天)
+            is_clipped = row['Local End'] > day_end_limit
+
+            mod = i % 3
+            fixed_yshift = 16
+
+            if mod == 0:
+                # 模式0: 居中 (Center)
+                # 使用 clamped_end 计算中点，确保文字始终在可视范围内
+                x_pos = row['Local Start'] + (clamped_end - row['Local Start']) / 2
+                x_anchor = 'center'
+                x_shift = 0
+
+            elif mod == 1:
+                # 模式1: 靠右显示 (Right Shift)
+                if is_clipped:
+                    # [关键修复] 如果被截断，文字锚点设为 23:59
+                    # 并且强制 anchor='right'，让文字显示在 23:59 的左侧（屏幕内）
+                    x_pos = clamped_end
+                    x_anchor = 'right'  # 改为靠右对齐（向左延伸）
+                    x_shift = -5  # 向左微调，留出边距
+                else:
+                    # 正常情况：显示在条形右侧
+                    x_pos = row['Local End']
+                    x_anchor = 'left'
+                    x_shift = 5
+
+            else:
+                # 模式2: 靠左显示 (Left Shift)
+                # 左侧通常不会被截断 (因为我们过滤了 Start Date)
+                x_pos = row['Local Start']
+                x_anchor = 'right'
+                x_shift = -5
+
+            fig.add_annotation(
+                x=x_pos,
+                y=y_pos,
+                yshift=fixed_yshift,
+                xshift=x_shift,
+                xanchor=x_anchor,
+                text=f"{row['Time Span']} ({row['Duration Label']})",
+                showarrow=False,
+                font=dict(size=10, color="black")
+            )
+
+        fig.add_shape(
+            type="rect", xref="paper", yref="y", x0=0, x1=1,
+            y0=current_y_base - 0.2, y1=current_y_base + category_height - 0.2,
+            fillcolor="gray", opacity=0.05, layer="below", line_width=0,
+        )
+
+        current_y_base += category_height + 0.5
+
+    # 设置 X 轴范围 (使用之前计算好的 ref_date)
+    start_range = datetime.datetime.combine(ref_date, datetime.time.min)
+    end_range = datetime.datetime.combine(ref_date, datetime.time.max)
+
+    fig.update_layout(
+        height=max(400, current_y_base * 50),
+        xaxis=dict(
+            title="Hour of Day (Local Time)",
+            type='date',
+            tickformat='%H:%M',
+            gridcolor='rgba(0,0,0,0.1)',
+            range=[start_range, end_range]
+        ),
+        yaxis=dict(
+            tickmode='array',
+            tickvals=y_tick_vals,
+            ticktext=y_tick_text,
+            tickfont=dict(size=12, family="Microsoft YaHei", weight="bold"),
+            gridcolor='rgba(0,0,0,0)'
+        ),
+        plot_bgcolor='white',
+        margin=dict(l=10, r=10, t=40, b=10),
+        hoverlabel=dict(
+            bgcolor="white",
+            font_size=14,
+            font_family="sans-serif",
+            align="left"
+        )
+    )
+
+    st.plotly_chart(fig, width="stretch")
+
+
+# 饼图逻辑保持不变
+def plot_pie_chart(df):
+    dist = df.groupby(['Event Name', 'Hex Color'])['Duration Val'].sum().reset_index()
+
+    def make_autopct(values):
+        def my_autopct(pct):
+            total = sum(values)
+            val = pct * total / 100.0
+            return f'{pct:.1f}%\n({val:.2f}h)'
+
+        return my_autopct
+
+    fig_pie, ax_pie = plt.subplots(figsize=(6, 6))
+    ax_pie.pie(
+        dist['Duration Val'],
+        labels=dist['Event Name'],
+        autopct=make_autopct(dist['Duration Val']),
+        startangle=140,
+        colors=dist['Hex Color'],
+        textprops={'fontsize': 10, 'fontfamily': 'Microsoft YaHei'}
+    )
+    ax_pie.set_title(f"Total: {df['Duration Val'].sum():.2f} hrs", fontweight='bold')
+    st.pyplot(fig_pie)

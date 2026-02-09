@@ -2,6 +2,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.31%2B-FF4B4B?logo=streamlit)](https://streamlit.io/)
+[![Plotly](https://img.shields.io/badge/Plotly-Interactive-3F4F75?logo=plotly)](https://plotly.com/python/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
 A professional productivity telemetry dashboard that interfaces with the **Google Calendar API**. This tool ingests calendar events, normalizes temporal data, and visualizes daily schedules using a custom **Gantt-style Swimlane Engine** and aggregated distribution metrics.
@@ -12,30 +13,48 @@ Designed for engineers and professionals who need granular insights into their t
 
 ## ✨ Key Features
 
+* **Visualization Engine (Hybrid)**:
+    * **Interactive Swimlanes (New)**: Powered by **Plotly**, featuring rich hover-over tooltips that display full event descriptions, formatted notes, and precise durations.
+    * **Precision Timeline**: 24-hour linear visualization with sub-lane stacking for overlapping events.
+    * **Color Binding**: Strict Hex-code synchronization between Google Calendar source and charts.
+
 * **ETL Pipeline**:
-    * **Wide-Fetch Strategy**: Automatically broadens the API query window to handle UTC timezone offsets, ensuring no data loss for evening events.
+    * **Wide-Fetch Strategy**: Automatically broadens the API query window to handle UTC timezone offsets.
     * **Timezone Synchronization**: Auto-detects and converts calendar events to the user's local system time.
     * **Normalization**: Cleanses event titles and color metadata for accurate categorical aggregation.
 
-* **Visualization Engine**:
-    * **Smart Swimlanes**: Implements a greedy algorithm (`solve_overlaps`) to detect temporal collisions and render overlapping events in stacked sub-lanes.
-    * **Precision Timeline**: 24-hour linear visualization with slim bars and external annotation for high information density.
-    * **Color Binding**: Strict Hex-code synchronization between Google Calendar source, Timeline, and Distribution charts.
-
-* **CJK Support**: Built-in font configuration to support Chinese/Japanese/Korean characters in Matplotlib charts.
+* **CJK Support**: Built-in font configuration to support Chinese/Japanese/Korean characters.
 
 ## 🛠️ Tech Stack
 
 * **Frontend**: Streamlit
 * **Data Processing**: Pandas
-* **Visualization**: Matplotlib (Custom patches & broken_barh)
+* **Visualization**: 
+    * **Plotly** (Interactive Timeline & Tooltips)
+    * **Matplotlib** (Static Distribution Charts)
 * **Backend**: Google Client Library for Python
+
+## 📂 Project Structure
+
+The project follows a modular architecture for scalability and maintainability:
+
+```text
+Google-Calendar-Analyzer/
+├── app.py                # Application Entry Point
+├── src/                  # Source Modules
+│   ├── auth.py           # Google API Authentication
+│   ├── data_loader.py    # ETL & Data Cleaning
+│   ├── visualization.py  # Plotting Engines (Plotly/Matplotlib)
+│   ├── utils.py          # Algorithms (Overlap Detection)
+│   └── config.py         # Configuration & Constants
+└── requirements.txt      # Dependency Management
+```
 
 ## 🚀 Installation & Setup
 
 ### 1. Clone the Repository
 ```bash
-git clone [https://github.com/your-username/daily-schedule-analyzer.git](https://github.com/your-username/daily-schedule-analyzer.git)
+git clone [https://github.com/your-username/Google-Calendar-Analyzer.git](https://github.com/your-username/Google-Calendar-Analyzer.git)
 cd Google-Calendar-Analyzer
 
 ```
@@ -65,6 +84,7 @@ pip install -r requirements.txt
 streamlit
 pandas
 matplotlib
+plotly>=5.0.0
 google-auth
 google-auth-oauthlib
 google-auth-httplib2

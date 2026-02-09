@@ -1,12 +1,35 @@
-# .gitignore
+# Python compilation archives
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual Environments
 .env
 .venv/
 env/
 venv/
-.DS_Store
+ENV/
 
-# Google Auth Files (Critical Security)
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# IDE settings (Visual Studio Code, JetBrains, etc.)
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Google Auth Files (CRITICAL SECURITY - NEVER COMMIT THESE)
 credentials.json
 token.json
+client_secret.json
+
+# Runtime logs
+*.log
+
+# Streamlit config (optional, if you have local secrets)
+.streamlit/secrets.toml
