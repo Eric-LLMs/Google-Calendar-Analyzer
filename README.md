@@ -13,7 +13,6 @@ Designed for engineers and professionals who need granular insights into their t
 
 ## 💡 Motivation
 
-> *"If you can't measure it, you can't improve it."* — Peter Drucker
 
 Google Calendar's native **"Time Insights"** feature provides valuable analytics, but it is restrictively gatekept behind paid **Google Workspace** and **Education** editions. Standard users with personal accounts are left without tools to quantify their time allocation.
 
