@@ -1,19 +1,19 @@
 import datetime
-import pandas as pd  # 需要用到 pandas 处理时间计算
+import pandas as pd
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import streamlit as st
 from src.utils import solve_overlaps
 
+# 设置字体以支持中文
 plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'sans-serif']
 plt.rcParams['axes.unicode_minus'] = False
 
 
 def plot_interactive_timeline(df, selected_date_obj=None):
     """
-    绘制 Plotly 交互式泳道图
+    绘制 Plotly 交互式泳道图 (保持不变)
     """
-    # [核心修改 1] 将 ref_date 的计算移到最前面，用于后续的边界判定
     if selected_date_obj:
         ref_date = selected_date_obj
     elif not df.empty:
@@ -23,10 +23,6 @@ def plot_interactive_timeline(df, selected_date_obj=None):
             ref_date = df.iloc[0]['Local Start'].date()
     else:
         ref_date = datetime.date.today()
-
-    # 定义当天的可视边界 (用于 Clamping)
-    # 这里的 view_limit 并不带时区，比较时需要注意
-    # 我们主要利用 row['Local Start'] 来获取当天的 23:59:59 (带时区)
 
     unique_events = sorted(df['Event Name'].unique(), reverse=True)
 
@@ -51,7 +47,6 @@ def plot_interactive_timeline(df, selected_date_obj=None):
         for i, ((idx, row), sub_idx) in enumerate(zip(subset.iterrows(), sub_lanes)):
             y_pos = current_y_base + (sub_idx * SUB_LANE_OFFSET)
 
-            # Hover 信息
             hover_html = (
                     f"<b>{row['Event Name']}</b><br>" +
                     f"🕒 {row['Time Span']} ({row['Duration Label']})<br>" +
@@ -70,44 +65,27 @@ def plot_interactive_timeline(df, selected_date_obj=None):
                 showlegend=False
             ))
 
-            # [核心修改 2] 边界钳制 (Clamping)
-            # 计算当前事件所在日期的 23:59:59 (保留原时区信息)
-            # 使用 pd.Timestamp.ceil 或 replace 可能会丢失时区，这里用 Timedelta 安全计算
             day_end_limit = row['Local Start'].normalize() + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
-
-            # 真实的视觉结束点：取“事件结束时间”和“当天23:59”的较小值
             clamped_end = min(row['Local End'], day_end_limit)
-
-            # 判断是否被截断 (事件延伸到了第二天)
             is_clipped = row['Local End'] > day_end_limit
 
             mod = i % 3
             fixed_yshift = 16
 
             if mod == 0:
-                # 模式0: 居中 (Center)
-                # 使用 clamped_end 计算中点，确保文字始终在可视范围内
                 x_pos = row['Local Start'] + (clamped_end - row['Local Start']) / 2
                 x_anchor = 'center'
                 x_shift = 0
-
             elif mod == 1:
-                # 模式1: 靠右显示 (Right Shift)
                 if is_clipped:
-                    # [关键修复] 如果被截断，文字锚点设为 23:59
-                    # 并且强制 anchor='right'，让文字显示在 23:59 的左侧（屏幕内）
                     x_pos = clamped_end
-                    x_anchor = 'right'  # 改为靠右对齐（向左延伸）
-                    x_shift = -5  # 向左微调，留出边距
+                    x_anchor = 'right'
+                    x_shift = -5
                 else:
-                    # 正常情况：显示在条形右侧
                     x_pos = row['Local End']
                     x_anchor = 'left'
                     x_shift = 5
-
             else:
-                # 模式2: 靠左显示 (Left Shift)
-                # 左侧通常不会被截断 (因为我们过滤了 Start Date)
                 x_pos = row['Local Start']
                 x_anchor = 'right'
                 x_shift = -5
@@ -131,7 +109,6 @@ def plot_interactive_timeline(df, selected_date_obj=None):
 
         current_y_base += category_height + 0.5
 
-    # 设置 X 轴范围 (使用之前计算好的 ref_date)
     start_range = datetime.datetime.combine(ref_date, datetime.time.min)
     end_range = datetime.datetime.combine(ref_date, datetime.time.max)
 
@@ -164,7 +141,7 @@ def plot_interactive_timeline(df, selected_date_obj=None):
     st.plotly_chart(fig, width="stretch")
 
 
-# 饼图逻辑保持不变
+# --- [核心修改] 更新饼图逻辑 ---
 def plot_pie_chart(df):
     dist = df.groupby(['Event Name', 'Hex Color'])['Duration Val'].sum().reset_index()
 
@@ -172,7 +149,8 @@ def plot_pie_chart(df):
         def my_autopct(pct):
             total = sum(values)
             val = pct * total / 100.0
-            return f'{pct:.1f}%\n({val:.2f}h)'
+            # [修改点] 将 \n 改为空格，强制单行显示，减少对垂直空间的占用
+            return f'{pct:.1f}% ({val:.2f}h)'
 
         return my_autopct
 
