@@ -181,7 +181,7 @@ def main():
                 # [核心交互]
                 # 这是一个真正的 Button，但通过 CSS 伪装成了蓝色链接
                 # 点击它直接触发 Python 函数，没有网络跳转
-                if sub_c2.button("🔍 View Detail", key=f"btn_{row['Event ID']}", type="tertiary"):
+                if sub_c2.button("🔍 View Detail", key = f"btn_{row['Event ID']}_{index}", type="tertiary"):
                     show_note_details(row)
 
             # 行分隔线 (可选，为了像表格)
