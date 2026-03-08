@@ -58,6 +58,7 @@ def fetch_calendar_data(start_date, end_date):
         if not events: return pd.DataFrame(), user_timezone
 
         rows = []
+
         for event in events:
             start_raw = event['start'].get('dateTime')
             end_raw = event['end'].get('dateTime')
@@ -66,11 +67,16 @@ def fetch_calendar_data(start_date, end_date):
                 start_dt = pd.to_datetime(start_raw).tz_convert(user_timezone)
                 end_dt = pd.to_datetime(end_raw).tz_convert(user_timezone)
 
-                if start_dt.date() < start_date or start_dt.date() > end_date:
+                name = event.get('summary', 'Untitled').strip()
+
+                effective_date = start_dt.date()
+                if "sleep" in name.lower() and start_dt.date() != end_dt.date():
+                    effective_date = end_dt.date()
+
+                if effective_date < start_date or effective_date > end_date:
                     continue
 
                 duration = (end_dt - start_dt).total_seconds() / 3600
-                name = event.get('summary', 'Untitled').strip()
 
                 raw_desc = event.get('description', '')
                 tooltip_desc, markdown_desc, short_desc = parse_html_description(raw_desc)
@@ -78,7 +84,7 @@ def fetch_calendar_data(start_date, end_date):
                 raw_color = event.get('colorId', 'Default')
                 color_info = COLOR_MAP.get(raw_color, COLOR_MAP['Default'])
 
-                date_obj = start_dt.date()
+                date_obj = effective_date
                 time_range = f"{start_dt.strftime('%H:%M')}-{end_dt.strftime('%H:%M')}"
                 event_id = str(start_dt.value)
 
@@ -95,7 +101,7 @@ def fetch_calendar_data(start_date, end_date):
                     'Time Span': time_range,
                     'Tooltip Description': tooltip_desc,
                     'Markdown Description': markdown_desc,
-                    'Short Notes': short_desc,  # 纯文本
+                    'Short Notes': short_desc,
                 })
         return pd.DataFrame(rows), user_timezone
     except Exception as e:
